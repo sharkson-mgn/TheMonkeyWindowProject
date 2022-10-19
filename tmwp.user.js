@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.1
+// @version      0.1.1
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -13,8 +13,8 @@
 // @grant        GM_getResourceText
 // @require      https://code.jquery.com/jquery-3.6.1.min.js#sha256=o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=
 // @require      https://code.jquery.com/ui/1.13.2/jquery-ui.min.js
-// @require      https://unpkg.com/vue@3/dist/vue.global.js
-// @require      https://unpkg.com/vuex@4.0.0/dist/vuex.global.js
+// @require      https://unpkg.com/vue@3/dist/vue.global.prod.js
+// @require      https://unpkg.com/vuex@4.0.0/dist/vuex.global.prod.js
 // @resource     jQueryUiCSS https://code.jquery.com/ui/1.13.2/themes/black-tie/jquery-ui.css
 // ==/UserScript==
 
@@ -22,8 +22,8 @@
     'use strict';
 
     if (typeof unsafeWindow == 'undefined') {
-        unsafeWindow = (function() {
-            var el = document.createElement('p');
+        const unsafeWindow = (function() {
+            const el = document.createElement('p');
             el.setAttribute('onclick', 'return window;');
             return el.onclick();
         }());
@@ -200,7 +200,7 @@
                 }
 
                 .${this.getWindowClass()} .wmContent {
-                    overflow: auto;
+                    overflow: hidden auto;
                     display: flex-item;
                     width: 100%;
                     scrollbar-width: thin;
