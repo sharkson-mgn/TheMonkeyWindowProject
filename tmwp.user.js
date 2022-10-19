@@ -277,9 +277,7 @@
             });
         }
 
-        window.onfocus = function() {
-            that.updatePos();
-        };
+        window.addEventListener('focus',() => { that.updatePos() });
 
         return new function() {
             this.getId = () => that.getId();
