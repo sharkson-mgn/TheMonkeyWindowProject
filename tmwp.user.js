@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.1.1
+// @version      0.1.2
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -100,6 +100,7 @@
             rememberPos: false,
             rememberSize: false,
             centered: false,
+            clickOutside: false,
             id: this.randStr(),
             globId: !unsafeWindow.document.querySelector('.wmWrapperWindow') ? 'mainWindow' : this.randStr(),
             ...options
@@ -123,6 +124,19 @@
                 },
             }
         );
+
+        if (this.param.clickOutside) {
+            document.addEventListener('click', function somefunction (event) {
+                console.log(that.getWindowId());
+                const box = document.getElementById(that.getWindowId());
+
+                if (!box.contains(event.target)) {
+                    //box.style.display = 'none';
+                    //box.remove();
+                }
+            });
+
+        }
 
         $('body').append(`
             <div id="${this.getWindowId()}" class="${this.getWindowClass()} wmWrapperWindow" data-windowName="${this.param.globId}" data-windowId="${this.param.id}">
@@ -278,6 +292,7 @@
         }
 
         window.addEventListener('focus',() => { that.updatePos() });
+        window.addEventListener('resize',() => { that.updatePos() });
 
         return new function() {
             this.getId = () => that.getId();
