@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.1.2
+// @version      0.1.3
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -52,12 +52,12 @@
 
         this.randStr = (len = 8) => Array.from(Array(len)).map(() => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join('');
 
-        this.getId = function() { return this.param.id; };
-        this.getWindowId = function() { return `${this.tmwpid}_${this.param.id}_wrapper`; };
+        this.getId = function() { return this.param.globId; };
+        this.getWindowId = function() { return `${this.tmwpid}_${this.param.globId}_wrapper`; };
         this.getWindowClass = function() { return `_tmwpGlobalClass_`; };
-        this.getTitleId = function() { return `${this.tmwpid}_${this.param.id}_title`; };
-        this.getContentId = function() { return `${this.tmwpid}_${this.param.id}_content`; };
-        this.getIconsId = function() { return `${this.tmwpid}_${this.param.id}_icons`; };
+        this.getTitleId = function() { return `${this.tmwpid}_${this.param.globId}_title`; };
+        this.getContentId = function() { return `${this.tmwpid}_${this.param.globId}_content`; };
+        this.getIconsId = function() { return `${this.tmwpid}_${this.param.globId}_icons`; };
 
         this.checkY = (int) =>  (int || int === 0) ? Math.min($(window).innerHeight() - $( `#${this.getWindowId()}` ).outerHeight(),Math.max( 0, int )) : int;
         this.checkX = (int) => (int || int === 0) ? Math.min($(window).innerWidth() - $( `#${this.getWindowId()}` ).outerWidth(),Math.max( 0, int )) : int;
@@ -110,6 +110,10 @@
             this.param.globId = this.randStr();
         }
 
+        if (document.querySelector('#' + this.getWindowId())) {
+            return false;
+        }
+
         this.storage = new Proxy(
             {},
             {
@@ -130,7 +134,7 @@
                 console.log(that.getWindowId());
                 const box = document.getElementById(that.getWindowId());
 
-                if (!box.contains(event.target)) {
+                if (box && !box.contains(event.target)) {
                     //box.style.display = 'none';
                     //box.remove();
                 }
