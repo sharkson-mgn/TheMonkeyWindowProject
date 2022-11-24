@@ -57,5 +57,5 @@ When You have created own user script, follow the script:
  
 Additional, You can use any framework like Vue:
 ```
-app.mount('#${myWindow.getWindowId()});
+app.mount(`#${myWindow.getWindowId()}`);
 ```
