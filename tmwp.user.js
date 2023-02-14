@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.1.3
+// @version      0.1.4
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -144,9 +144,11 @@
 
         $('body').append(`
             <div id="${this.getWindowId()}" class="${this.getWindowClass()} wmWrapperWindow" data-windowName="${this.param.globId}" data-windowId="${this.param.id}">
-                <div id="${this.getIconsId()}" class="wmIcons"></div>
-                <div id="${this.getTitleId()}" class="wmTitle">
-                    ${this.param.title}
+                <div class="wmHeader">
+                    <div id="${this.getTitleId()}" class="wmTitle">
+                        ${this.param.title}
+                    </div>
+                    <div id="${this.getIconsId()}" class="wmIcons"></div>
                 </div>
                 <div id="${this.getContentId()}" class="wmContent">
                     ${this.param.content}
@@ -158,7 +160,7 @@
             $(`#${this.getIconsId()}`).append(`
                 <span class="wmClose">&#x2715</span>
             `);
-            $(`#${this.getIconsId()} .wmClose`).click(function() {
+            $(`#${this.getIconsId()}.wmIcons .wmClose`).click(function() {
                 $(`#${that.getWindowId()}`).remove();
             });
         }
@@ -187,28 +189,35 @@
                     line-height: 1.5em;
                 }
 
+                .${this.getWindowClass()} .wmHeader {
+                    border-bottom: 1px grey solid;
+                    display: flex;
+                }
+
                 .${this.getWindowClass()} .wmIcons {
-                    position: absolute;
-                    top: 0.2em;
-                    right: 0.2em;
-                    padding-right: 0.2em;
-                    padding-top: 0.2em;
                     line-height: 1em;
                     font-size: 1.2em;
+                    display: flex;
                 }
 
                 .${this.getWindowClass()} .wmIcons span {
                     cursor: pointer;
                     padding: 2px;
                     border: 1px transparent solid;
+                    line-height: initial;
                 }
                 .${this.getWindowClass()} .wmIcons span:hover {
                     border: 1px grey solid;
                 }
 
                 .${this.getWindowClass()} .wmTitle {
-                    border-bottom: 1px grey solid;
                     padding: 0.2em;
+                    display: flex;
+                    align-items: baseline;
+                    width: 100%;
+                    gap: 0.5em;
+                    white-space: nowrap;
+                    overflow: hidden;
                 }
 
                 .${this.getWindowClass()} .wmTitle.dragged {
@@ -248,6 +257,7 @@
                 }
             `);
             $( `#${this.getWindowId()}` ).draggable({
+                containment: "document",
                 handle: `#${that.getTitleId()}`,
                 scroll: false,
                 start: function(event,ui) {
