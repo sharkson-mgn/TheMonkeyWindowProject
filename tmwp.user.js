@@ -4,7 +4,7 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      0.2.2
+// @version      0.2.3
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -220,15 +220,14 @@
                     display: flex;
                     border: 1px grey solid;
                     aspect-ratio: 1/1;
-                    max-height: 1.8em;
                     border-radius: 50%;
                     font-size: 0.8em;
                     font-weight: bold;
                     align-items: center;
-                    padding: 1em;
                     justify-content: center;
                     cursor: pointer;
                     background-color: white;
+                    height: 2.5em;
                     transition: 0.5s;
                 }
                 .${this.getWindowClass()} .wmWindowIcon:hover {
