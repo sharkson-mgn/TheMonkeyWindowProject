@@ -2,7 +2,9 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.2.1
+// @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
+// @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
+// @version      0.2.2
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -79,8 +81,8 @@
         this.updatePos = function() {
             if (this.param.rememberPos) {
                 $( `#${this.getWindowId()}` ).css({
-                    top: that.checkY(that.storage.posTop),
-                    left: that.checkX(that.storage.posLeft)
+                    top: that.checkY(that.fromPercentWindow(that.storage.posTop,'height')),
+                    left: that.checkX(that.fromPercentWindow(that.storage.posLeft))
                 });
             }
 
@@ -99,6 +101,13 @@
         this.addIcon = function(html) {
             $(`#${this.getIconsId()}`).prepend(html);
         };
+
+        this.fromPercentWindow = function(percent,dim = 'width') {
+            return (window['inner' + dim.charAt(0).toUpperCase() + dim.slice(1)] * percent) / 100;
+        }
+        this.toPercentWindow = function(percent,dim = 'width') {
+            return (percent * 100) / window['inner' + dim.charAt(0).toUpperCase() + dim.slice(1)];
+        }
 
         this.param = {
             majorTitle: null,
@@ -326,8 +335,8 @@
                     ui.position.top = that.checkY(ui.position.top);
                     ui.position.left = that.checkX(ui.position.left);
                     if (that.param.rememberPos) {
-                        that.storage.posTop = ui.position.top;
-                        that.storage.posLeft = ui.position.left;
+                        that.storage.posTop = that.toPercentWindow(ui.position.top,'height');
+                        that.storage.posLeft = that.toPercentWindow(ui.position.left);
                     }
                 },
                 stop: function(event,ui) {
