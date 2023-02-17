@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.2.0
+// @version      0.2.1
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -358,7 +358,9 @@
 
         this.updatePos();
 
-        setInterval(() => this.updatePos(),500);
+        this.makeSyncable = function() {
+            setInterval(() => this.updatePos(),500);
+        };
 
         if (this.param.centered) {
             $(`#${this.getWindowId()}`).css({
@@ -410,6 +412,7 @@
             this.makeResizable = () => that.makeResizable();
             this.addIcon = (html) => that.addIcon(html);
             this.getWindowClass = () => that.getWindowClass();
+            this.makeSyncable = () => that.makeSyncable();
         };
 
     };
