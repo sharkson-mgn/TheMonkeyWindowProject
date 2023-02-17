@@ -2,7 +2,7 @@
 // @name         TheMonkeyWindowProject
 // @namespace    http://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
-// @version      0.1.4
+// @version      0.2.0
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -54,10 +54,15 @@
 
         this.getId = function() { return this.param.globId; };
         this.getWindowId = function() { return `${this.tmwpid}_${this.param.globId}_wrapper`; };
+        this.getHeaderId = function() { return `${this.tmwpid}_${this.param.globId}_header`; };
         this.getWindowClass = function() { return `_tmwpGlobalClass_`; };
         this.getTitleId = function() { return `${this.tmwpid}_${this.param.globId}_title`; };
         this.getContentId = function() { return `${this.tmwpid}_${this.param.globId}_content`; };
         this.getIconsId = function() { return `${this.tmwpid}_${this.param.globId}_icons`; };
+
+        this.getWindowIcon = function() {
+            return this.param.majorTitle.replace(/[a-z]/g, '');
+        };
 
         this.checkY = (int) =>  (int || int === 0) ? Math.min($(window).innerHeight() - $( `#${this.getWindowId()}` ).outerHeight(),Math.max( 0, int )) : int;
         this.checkX = (int) => (int || int === 0) ? Math.min($(window).innerWidth() - $( `#${this.getWindowId()}` ).outerWidth(),Math.max( 0, int )) : int;
@@ -85,6 +90,10 @@
                     height: that.storage.sizeHeight
                 });
             }
+
+            if ((this.storage.isMinimized ^ $( `#${this.getWindowId()}` ).hasClass('wmMinimized'))) {
+                $( `#${this.getWindowId()} .wmWindowIcon` ).click();
+            }
         };
 
         this.addIcon = function(html) {
@@ -92,6 +101,7 @@
         };
 
         this.param = {
+            majorTitle: null,
             title: 'example title',
             content: 'example content',
             draggable: false,
@@ -142,9 +152,14 @@
 
         }
 
+        if (!!this.param.majorTitle) {
+            this.param.title = this.param.majorTitle + ' ' + this.param.title;
+        }
+
         $('body').append(`
-            <div id="${this.getWindowId()}" class="${this.getWindowClass()} wmWrapperWindow" data-windowName="${this.param.globId}" data-windowId="${this.param.id}">
-                <div class="wmHeader">
+            <div id="${this.getWindowId()}" class="${this.getWindowClass()}${this.storage.isMinimized ? ' wmMinimized' : ''} wmWrapperWindow" data-windowName="${this.param.globId}" data-windowId="${this.param.id}">
+                <div id="${this.getHeaderId()}" class="wmHeader">
+                    ${(!!this.param.majorTitle) ? `<div class="wmWindowIcon">${this.getWindowIcon()}</div>` : `` }
                     <div id="${this.getTitleId()}" class="wmTitle">
                         ${this.param.title}
                     </div>
@@ -156,12 +171,9 @@
             </div>
         `);
 
-        if (this.param.closable) {
-            $(`#${this.getIconsId()}`).append(`
-                <span class="wmClose">&#x2715</span>
-            `);
-            $(`#${this.getIconsId()}.wmIcons .wmClose`).click(function() {
-                $(`#${that.getWindowId()}`).remove();
+        if (!!this.param.majorTitle) {
+            $(`.wmWindowIcon`).click(function() {
+                console.log('dezdowe');
             });
         }
 
@@ -192,6 +204,26 @@
                 .${this.getWindowClass()} .wmHeader {
                     border-bottom: 1px grey solid;
                     display: flex;
+                    align-items: center;
+                }
+
+                .${this.getWindowClass()} .wmWindowIcon {
+                    display: flex;
+                    border: 1px grey solid;
+                    aspect-ratio: 1/1;
+                    max-height: 1.8em;
+                    border-radius: 50%;
+                    font-size: 0.8em;
+                    font-weight: bold;
+                    align-items: center;
+                    padding: 1em;
+                    justify-content: center;
+                    cursor: pointer;
+                    background-color: white;
+                    transition: 0.5s;
+                }
+                .${this.getWindowClass()} .wmWindowIcon:hover {
+                    border: 1px black solid;
                 }
 
                 .${this.getWindowClass()} .wmIcons {
@@ -233,6 +265,32 @@
                     padding: 0.2em;
                 }
 
+                .${this.getWindowClass()}.wmMinimized {
+                    font-size: 1.5em;
+                    min-width: unset;
+                    min-height: unset;
+                    width: auto !important;
+                    height: auto !important;
+                    border-color: transparent !important;
+                    background-color: transparent !important;
+                    box-shadow: none !important;
+                    overflow: visible !important;
+                }
+
+                .${this.getWindowClass()}.wmMinimized .wmHeader *,
+                .${this.getWindowClass()}.wmMinimized .wmContent {
+                    display: none !important;
+                }
+
+                .${this.getWindowClass()}.wmMinimized .wmHeader {
+                    border-width: 0;
+                }
+
+                .${this.getWindowClass()}.wmMinimized .wmHeader .wmWindowIcon {
+                    display: flex !important;
+                    border-color: red;
+                }
+
                 .ui-icon-gripsmall-diagonal-se {
                     background-image: url("https://code.jquery.com/ui/1.11.4/themes/ui-lightness/images/ui-icons_222222_256x240.png");
                 }
@@ -248,7 +306,7 @@
                 width: ${this.param.width || '150px'};
                 height: ${this.param.height || '100px'};
             }
-       `)
+       `);
 
         if (this.param.draggable) {
             GM_addStyle(`
@@ -258,10 +316,11 @@
             `);
             $( `#${this.getWindowId()}` ).draggable({
                 containment: "document",
-                handle: `#${that.getTitleId()}`,
+                handle: `#${that.getHeaderId()}`,
                 scroll: false,
                 start: function(event,ui) {
-                    event.target.querySelector('.wmTitle').classList.add('dragged');
+                    event.target.querySelector('#'+that.getHeaderId()).classList.add('dragged');
+                    $( `#${that.getWindowId()}` ).addClass('wmDragging');
                 },
                 drag: function(event,ui) {
                     ui.position.top = that.checkY(ui.position.top);
@@ -272,7 +331,7 @@
                     }
                 },
                 stop: function(event,ui) {
-                    event.target.querySelector('.wmTitle').classList.remove('dragged');
+                    event.target.querySelector('#'+that.getHeaderId()).classList.remove('dragged');
                 }
             });
         }
@@ -284,6 +343,7 @@
                 //autoHide: true,
                 handles: "n, e, s, w, se, sw",
                 resize: function(event,ui) {
+                    //if (that.param.rememberSize && !document.querySelector('#'+that.getWindowId()).classList.contains('wmMinimized')) {
                     if (that.param.rememberSize) {
                         that.storage.sizeWidth = ui.size.width;
                         that.storage.sizeHeight = ui.size.height;
@@ -292,11 +352,13 @@
             });
         }
 
-        if (this.param.resizable) {
+        /*if (this.param.resizable) {
             this.makeResizable();
-        }
+        }*/
 
         this.updatePos();
+
+        setInterval(() => this.updatePos(),500);
 
         if (this.param.centered) {
             $(`#${this.getWindowId()}`).css({
@@ -308,9 +370,40 @@
         window.addEventListener('focus',() => { that.updatePos() });
         window.addEventListener('resize',() => { that.updatePos() });
 
+        setTimeout(() => {
+            if (this.param.closable) {
+                $(`#${this.getIconsId()}`).append(`
+                <span class="wmClose">&#x2715</span>
+            `);
+                $(`#${this.getIconsId()}.wmIcons .wmClose`).click(function() {
+                    $(`#${that.getWindowId()}`).remove();
+                });
+            }
+            if (this.param.resizable && !this.storage.isMinimized) {
+                this.makeResizable();
+            }
+            $(`#${this.getWindowId()} .wmWindowIcon`).click(() => {
+                if ( $(`#${this.getWindowId()}`).hasClass('wmDragging') ) {
+                    $(`#${this.getWindowId()}`).removeClass('wmDragging')
+                    return;
+                }
+                $(`#${this.getWindowId()}`).toggleClass('wmMinimized');
+
+                if ( $(`#${this.getWindowId()}`).hasClass('wmMinimized') ) {
+                    $(`#${this.getWindowId()}`).resizable('destroy');
+                    this.param.resizable = false;
+                } else {
+                    this.makeResizable();
+                }
+
+                this.storage.isMinimized = $(`#${this.getWindowId()}`).hasClass('wmMinimized');
+            });
+        });
+
         return new function() {
             this.getId = () => that.getId();
             this.getWindowId = () => that.getWindowId();
+            this.getHeaderId = () => that.getHeaderId();
             this.getTitleId = () =>  that.getTitleId();
             this.getContentId = () =>  that.getContentId();
             this.randStr = () => that.randStr();
