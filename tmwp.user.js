@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         TheMonkeyWindowProject
-// @namespace    http://sharkson.eu/
+// @namespace    https://sharkson.eu/
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      0.2.3
+// @version      0.3.0
 // @description  [TMWP]
 // @author       sharkson-mgn
 // @match        http*://*/*
@@ -407,6 +407,19 @@
                 }
 
                 this.storage.isMinimized = $(`#${this.getWindowId()}`).hasClass('wmMinimized');
+            });
+            document.addEventListener('keydown', (event) => {
+                // Sprawdź, czy wciśnięty jest klawisz Ctrl
+                var isCtrlPressed = event.ctrlKey || event.metaKey;
+
+                // Sprawdź, czy wciśnięty jest klawisz Q
+                var isQPressed = event.key === 'q' || event.keyCode === 81;
+
+                // Jeśli oba warunki są spełnione, wykonaj akcję
+                if (isCtrlPressed && isQPressed) {
+                    // Tutaj umieść kod akcji, którą chcesz wykonać
+                    $(`#${this.getWindowId()} .wmWindowIcon`).click();
+                }
             });
         });
 
