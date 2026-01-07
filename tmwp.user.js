@@ -4,10 +4,11 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      1.0.0
+// @version      1.0.1
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
 // @match        *://*/*
+// @exclude      https://ps.mediaexpert.pl/snrs-crm-managment*
 // @require      https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js
 // @require      https://code.jquery.com/jquery-3.5.1.min.js
 // @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js
@@ -597,7 +598,7 @@
                                 try {
                                     const pos = JSON.parse(e.newValue);
                                     const currentOffset = $el.offset();
-                                    
+
                                     // Aktualizuj tylko jeśli pozycja się zmieniła
                                     if (currentOffset.left !== pos.left || currentOffset.top !== pos.top) {
                                         $el.css({
@@ -614,7 +615,7 @@
                                     const size = JSON.parse(e.newValue);
                                     const currentWidth = $el.outerWidth() + 'px';
                                     const currentHeight = $el.outerHeight() + 'px';
-                                    
+
                                     // Aktualizuj tylko jeśli rozmiar się zmienił
                                     if (currentWidth !== size.width || currentHeight !== size.height) {
                                         $el.css({
