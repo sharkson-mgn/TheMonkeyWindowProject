@@ -8,7 +8,7 @@
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
 // @match        *://*/*
-// @exclude      https://ps.mediaexpert.pl/snrs-crm-managment*
+// @exclude      https://*.mediaexpert.pl/snrs-crm-managment*
 // @require      https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js
 // @require      https://code.jquery.com/jquery-3.5.1.min.js
 // @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js
