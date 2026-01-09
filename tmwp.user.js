@@ -4,7 +4,7 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      1.0.1
+// @version      1.0.2
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
 // @match        *://*/*
@@ -693,8 +693,8 @@
                 position: 'fixed',
                 left: window.x + 'px',
                 top: window.y + 'px',
-                width: window.width,
-                height: window.height,
+                width: !window.minimized ? window.width : null,
+                height: !window.minimized ? window.height : null,
                 zIndex: 1000000010
             };
         };
