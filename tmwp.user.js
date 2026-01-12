@@ -4,7 +4,7 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      1.0.2
+// @version      1.0.3
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
 // @match        *://*/*
@@ -154,36 +154,51 @@
                 // Waliduj pozycję i rozmiar okna
                 validateWindowBounds(config) {
                     const viewport = {
-                        width: window.innerWidth,
-                        height: window.innerHeight
+                        width: window.innerWidth || document.documentElement.clientWidth,
+                        height: window.innerHeight || document.documentElement.clientHeight
                     };
+                    const margin = 10;
 
-                    // Parsuj rozmiary (usuwając 'px' jeśli jest)
+                    // 1. Parsuj rozmiary (usuwając 'px' jeśli jest)
                     let width = parseInt(String(config.width).replace('px', '')) || 400;
                     let height = parseInt(String(config.height).replace('px', '')) || 300;
-                    let x = config.x !== null && config.x !== undefined ? parseInt(String(config.x).replace('px', '')) : null;
-                    let y = config.y !== null && config.y !== undefined ? parseInt(String(config.y).replace('px', '')) : null;
 
-                    // Sprawdź minimalny rozmiar (nie może być zerowy)
-                    if (width <= 0) width = 400;
-                    if (height <= 0) height = 300;
+                    // Parsuj pozycje
+                    let x = (config.x !== null && config.x !== undefined) ? parseInt(String(config.x).replace('px', '')) : null;
+                    let y = (config.y !== null && config.y !== undefined) ? parseInt(String(config.y).replace('px', '')) : null;
 
-                    // Sprawdź czy okno nie jest za duże dla viewport
-                    if (width > viewport.width - 20) width = viewport.width - 20;
-                    if (height > viewport.height - 20) height = viewport.height - 20;
+                    // 2. Walidacja wymiarów (żeby okno nie było większe niż ekran)
+                    // Minimalne wymiary (np. 150px żeby okno nie zniknęło całkowicie)
+                    if (width < 150) width = 150;
+                    if (height < 100) height = 100;
 
-                    // Jeśli pozycja jest ustawiona, sprawdź czy okno jest w widoku
+                    // Maksymalne wymiary (rozmiar ekranu minus marginesy z obu stron)
+                    const maxWidth = viewport.width - (margin * 2);
+                    const maxHeight = viewport.height - (margin * 2);
+
+                    if (width > maxWidth) width = maxWidth;
+                    if (height > maxHeight) height = maxHeight;
+
+                    // 3. Walidacja pozycji (skoro element jest FIXED, sprawdzamy względem viewportu)
                     if (x !== null && y !== null) {
-                        // Sprawdź lewą krawędź
-                        if (x < 0) x = 10;
-                        // Sprawdź górną krawędź
-                        if (y < 0) y = 10;
-                        // Sprawdź prawą krawędź
-                        if (x + width > viewport.width) x = viewport.width - width - 10;
-                        // Sprawdź dolną krawędź
-                        if (y + height > viewport.height) y = viewport.height - height - 10;
+                        // Lewa krawędź
+                        if (x < margin) x = margin;
 
-                        // Jeśli nadal nie mieści się, wyśrodkuj
+                        // Górna krawędź
+                        if (y < margin) y = margin;
+
+                        // Prawa krawędź (używamy już zwalidowanej szerokości)
+                        if (x + width > viewport.width - margin) {
+                            x = viewport.width - width - margin;
+                        }
+
+                        // Dolna krawędź (używamy już zwalidowanej wysokości)
+                        if (y + height > viewport.height - margin) {
+                            y = viewport.height - height - margin;
+                        }
+
+                        // Finalny "failsafe" - jeśli po wszystkich korektach x/y nadal są ujemne 
+                        // (co może się zdarzyć na bardzo małych ekranach), wymuszamy wyśrodkowanie
                         if (x < 0 || y < 0) {
                             x = null;
                             y = null;
@@ -194,8 +209,8 @@
                         ...config,
                         width: width + 'px',
                         height: height + 'px',
-                        x,
-                        y,
+                        x: x !== null ? x : null,
+                        y: y !== null ? y : null,
                         centered: (x === null || y === null) ? true : config.centered
                     };
                 },
@@ -331,36 +346,75 @@
                 const store = Alpine.store('tmwp');
                 store.windows.forEach(win => {
                     const $el = $('#tmwp2-window-' + win.id);
-                    if ($el.length) {
-                        const offset = $el.offset();
-                        const width = $el.outerWidth();
-                        const height = $el.outerHeight();
 
-                        // Waliduj pozycję
+                    if ($el.length) {
+                        const rect = $el[0].getBoundingClientRect();
                         const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
                         const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
                         const margin = 10;
 
-                        let x = offset.left;
-                        let y = offset.top;
+                        // 1. Ogranicz wymiary (żeby okno nie było większe niż ekran)
+                        let width = $el.outerWidth();
+                        let height = $el.outerHeight();
+                        let sizeChanged = false;
 
-                        // Sprawdź granice
-                        if (x < margin - width) x = margin - width + 50;
-                        if (x > viewportWidth - margin) x = viewportWidth - margin - 50;
-                        if (y < margin) y = margin;
-                        if (y > viewportHeight - margin) y = viewportHeight - margin - 50;
+                        const maxWidth = viewportWidth - (margin * 2);
+                        const maxHeight = viewportHeight - (margin * 2);
 
-                        // Skoryguj pozycję jeśli jest poza widokiem
-                        if (x !== offset.left || y !== offset.top) {
+                        if (width > maxWidth) {
+                            width = maxWidth;
+                            sizeChanged = true;
+                        }
+                        if (height > maxHeight) {
+                            height = maxHeight;
+                            sizeChanged = true;
+                        }
+
+                        if (sizeChanged) {
+                            $el.css({
+                                width: width + 'px',
+                                height: height + 'px'
+                            });
+                        }
+
+                        // 2. Waliduj pozycję (po ewentualnej zmianie wymiarów)
+                        let x = rect.left;
+                        let y = rect.top;
+                        let posChanged = false;
+
+                        if (x < margin) {
+                            x = margin;
+                            posChanged = true;
+                        }
+                        if (x + width > viewportWidth - margin) {
+                            x = viewportWidth - width - margin;
+                            posChanged = true;
+                        }
+                        if (y < margin) {
+                            y = margin;
+                            posChanged = true;
+                        }
+                        if (y + height > viewportHeight - margin) {
+                            y = viewportHeight - height - margin;
+                            posChanged = true;
+                        }
+
+                        // 3. Zastosuj zmiany pozycji
+                        if (posChanged) {
                             $el.css({
                                 top: y + 'px',
                                 left: x + 'px'
                             });
+                        }
 
-                            // Zapisz nową pozycję
-                            if (typeof GM_setValue !== 'undefined') {
-                                GM_setValue('tmwp2_window_' + win.id + '_position', JSON.stringify({ x, y }));
-                            }
+                        // 4. Zapisz nowe parametry (jeśli cokolwiek się zmieniło)
+                        if ((posChanged || sizeChanged) && typeof GM_setValue !== 'undefined') {
+                            GM_setValue('tmwp2_window_' + win.id + '_position', JSON.stringify({
+                                x,
+                                y,
+                                width,
+                                height
+                            }));
                         }
                     }
                 });
@@ -390,34 +444,52 @@
             const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
             const margin = 10;
 
-            // Sprawdź minimalne wymiary
-            if (width <= 0) width = 400;
-            if (height <= 0) height = 300;
+            // 1. Walidacja wymiarów (żeby okno nie było większe niż ekran)
+            let validatedWidth = width || 400;
+            let validatedHeight = height || 300;
 
+            // Maksymalne dopuszczalne wymiary (ekran minus marginesy)
+            const maxWidth = viewportWidth - (margin * 2);
+            const maxHeight = viewportHeight - (margin * 2);
+
+            if (validatedWidth > maxWidth) validatedWidth = maxWidth;
+            if (validatedHeight > maxHeight) validatedHeight = maxHeight;
+
+            // Minimalne rozsądne wymiary
+            if (validatedWidth < 100) validatedWidth = 100;
+            if (validatedHeight < 100) validatedHeight = 100;
+
+            // 2. Walidacja pozycji (z uwzględnieniem pozycji FIXED)
             let validatedX = x;
             let validatedY = y;
 
-            // Jeśli okno całkowicie poza prawą krawędzią
-            if (x > viewportWidth - 50) {
-                validatedX = viewportWidth - width - margin;
-            }
-
-            // Jeśli okno całkowicie poza lewą krawędzią
-            if (x + width < 50) {
+            // Sprawdź lewą krawędź
+            if (validatedX < margin) {
                 validatedX = margin;
             }
 
-            // Jeśli okno poza dolną krawędzią
-            if (y > viewportHeight - 50) {
-                validatedY = viewportHeight - height - margin;
+            // Sprawdź prawą krawędź (używamy szerokości okna)
+            if (validatedX + validatedWidth > viewportWidth - margin) {
+                validatedX = viewportWidth - validatedWidth - margin;
             }
 
-            // Jeśli okno poza górną krawędzią
-            if (y < 0) {
+            // Sprawdź górną krawędź
+            if (validatedY < margin) {
                 validatedY = margin;
             }
 
-            return { x: validatedX, y: validatedY };
+            // Sprawdź dolną krawędź (używamy wysokości okna)
+            if (validatedY + validatedHeight > viewportHeight - margin) {
+                validatedY = viewportHeight - validatedHeight - margin;
+            }
+
+            // Zwracamy wszystko, bo szerokość/wysokość mogły ulec zmianie
+            return {
+                x: validatedX,
+                y: validatedY,
+                width: validatedWidth,
+                height: validatedHeight
+            };
         };
 
         // Zarejestruj wbudowane komponenty TMWP2
@@ -468,6 +540,8 @@
                             $el.css({
                                 top: validated.y + 'px',
                                 left: validated.x + 'px',
+                                width: validated.width + 'px',
+                                height: validated.height + 'px',
                                 transform: 'none'
                             });
                         } else if (windowConfig.centered && !windowConfig.x && !windowConfig.y) {
@@ -486,6 +560,8 @@
                             $el.css({
                                 top: validated.y + 'px',
                                 left: validated.x + 'px',
+                                width: validated.width + 'px',
+                                height: validated.height + 'px',
                                 transform: 'none'
                             });
                         }
@@ -505,7 +581,7 @@
                                 start: () => {
                                     $header.addClass('tmwp2-dragged');
                                     // Usuń transform przy rozpoczęciu
-                                    const offset = $el.offset();
+                                    const offset = $el[0].getBoundingClientRect();
                                     $el.css({
                                         top: offset.top + 'px',
                                         left: offset.left + 'px',
@@ -524,7 +600,7 @@
                                 stop: () => {
                                     $header.removeClass('tmwp2-dragged');
                                     // Zapisz pozycję
-                                    const offset = $el.offset();
+                                    const offset = $el[0].getBoundingClientRect();
                                     if (typeof localStorage !== 'undefined') {
                                         // Zapisz pozycję do localStorage
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
@@ -555,7 +631,7 @@
                                 },
                                 stop: (event, ui) => {
                                     // Zapisz rozmiar i pozycję
-                                    const offset = $el.offset();
+                                    const offset = $el[0].getBoundingClientRect();
                                     if (typeof localStorage !== 'undefined') {
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
                                             left: offset.left,
@@ -597,7 +673,7 @@
                             if (e.key === 'tmwp2_window_' + windowConfig.id + '_position' && e.newValue) {
                                 try {
                                     const pos = JSON.parse(e.newValue);
-                                    const currentOffset = $el.offset();
+                                    const currentOffset = $el[0].getBoundingClientRect();
 
                                     // Aktualizuj tylko jeśli pozycja się zmieniła
                                     if (currentOffset.left !== pos.left || currentOffset.top !== pos.top) {
@@ -688,13 +764,18 @@
         };
 
         // Helper functions dla Alpine
-        targetWindow.windowStyle = function (window) {
+        targetWindow.windowStyle = function (win) {
+            const savedSize = localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')) : { width: win.width, height: win.height };
             return {
                 position: 'fixed',
-                left: window.x + 'px',
-                top: window.y + 'px',
-                width: !window.minimized ? window.width : null,
-                height: !window.minimized ? window.height : null,
+                /* left: win.x + 'px',
+                top: win.y + 'px', */
+                left: localStorage.getItem('tmwp2_window_' + win.id + '_position') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_position')).left + 'px' : (win.x !== null && win.x !== undefined ? win.x + 'px' : '50%'),
+                top: localStorage.getItem('tmwp2_window_' + win.id + '_position') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_position')).top + 'px' : (win.y !== null && win.y !== undefined ? win.y + 'px' : '50%'),
+                width: !win.minimized ? savedSize.width : null,
+                height: !win.minimized ? savedSize.height : null,
+                /* width: win.minimized ? localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')).width : win.width : null,
+                height: win.minimized ? localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')).height : win.height : null, */
                 zIndex: 1000000010
             };
         };
