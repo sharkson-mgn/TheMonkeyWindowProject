@@ -4,12 +4,12 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      1.0.4
+// @version      1.0.5
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
 // @match        *://*/*
-// @require      https://code.jquery.com/jquery-3.5.1.min.js
-// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js
+// @require      https://code.jquery.com/jquery-4.0.0.min.js
+// @require      https://code.jquery.com/ui/1.14.2/jquery-ui.min.js
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_addStyle
 // @grant        GM_getValue
@@ -18,7 +18,7 @@
 // @noframes
 // @run-at       document-end
 // ==/UserScript==
-// @require      https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js
+// @require      https://cdn.jsdelivr.net/npm/alpinejs@3.15.11/dist/cdn.min.js
 
 (function () {
     'use strict';
