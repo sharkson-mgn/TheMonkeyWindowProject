@@ -4,12 +4,10 @@
 // @supportURL   https://github.com/sharkson-mgn/TheMonkeyWindowProject
 // @downloadURL  https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
 // @updateURL    https://github.com/sharkson-mgn/TheMonkeyWindowProject/raw/main/tmwp.user.js
-// @version      1.0.5
+// @version      1.1.0
 // @description  [TMWP] Alpine.js based window manager for userscripts
 // @author       sharkson-mgn
-// @match        *://*/*
-// @require      https://code.jquery.com/jquery-4.0.0.min.js
-// @require      https://code.jquery.com/ui/1.14.2/jquery-ui.min.js
+// @match        http*://*/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_addStyle
 // @grant        GM_getValue
@@ -350,82 +348,87 @@
             });
 
             // Waliduj wszystkie okna przy resize przeglądarki
+            // Debounce helper dla resize
+            let _resizeTimer = null;
+            const _debouncedResize = (fn, delay) => {
+                clearTimeout(_resizeTimer);
+                _resizeTimer = setTimeout(fn, delay);
+            };
+
             window.addEventListener('resize', () => {
-                const store = Alpine.store('tmwp');
-                store.windows.forEach(win => {
-                    const $el = $('#tmwp2-window-' + win.id);
+                _debouncedResize(() => {
+                    const store = Alpine.store('tmwp');
+                    store.windows.forEach(win => {
+                        const el = document.getElementById('tmwp2-window-' + win.id);
 
-                    if ($el.length) {
-                        const rect = $el[0].getBoundingClientRect();
-                        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-                        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-                        const margin = 10;
+                        if (el) {
+                            const rect = el.getBoundingClientRect();
+                            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+                            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                            const margin = 10;
 
-                        // 1. Ogranicz wymiary (żeby okno nie było większe niż ekran)
-                        let width = $el.outerWidth();
-                        let height = $el.outerHeight();
-                        let sizeChanged = false;
+                            // 1. Ogranicz wymiary (żeby okno nie było większe niż ekran)
+                            let width = el.offsetWidth;
+                            let height = el.offsetHeight;
+                            let sizeChanged = false;
 
-                        const maxWidth = viewportWidth - (margin * 2);
-                        const maxHeight = viewportHeight - (margin * 2);
+                            const maxWidth = viewportWidth - (margin * 2);
+                            const maxHeight = viewportHeight - (margin * 2);
 
-                        if (width > maxWidth) {
-                            width = maxWidth;
-                            sizeChanged = true;
-                        }
-                        if (height > maxHeight) {
-                            height = maxHeight;
-                            sizeChanged = true;
-                        }
+                            if (width > maxWidth) {
+                                width = maxWidth;
+                                sizeChanged = true;
+                            }
+                            if (height > maxHeight) {
+                                height = maxHeight;
+                                sizeChanged = true;
+                            }
 
-                        if (sizeChanged) {
-                            $el.css({
-                                width: width + 'px',
-                                height: height + 'px'
-                            });
-                        }
+                            if (sizeChanged) {
+                                el.style.width = width + 'px';
+                                el.style.height = height + 'px';
+                            }
 
-                        // 2. Waliduj pozycję (po ewentualnej zmianie wymiarów)
-                        let x = rect.left;
-                        let y = rect.top;
-                        let posChanged = false;
+                            // 2. Waliduj pozycję (po ewentualnej zmianie wymiarów)
+                            let x = rect.left;
+                            let y = rect.top;
+                            let posChanged = false;
 
-                        if (x < margin) {
-                            x = margin;
-                            posChanged = true;
-                        }
-                        if (x + width > viewportWidth - margin) {
-                            x = viewportWidth - width - margin;
-                            posChanged = true;
-                        }
-                        if (y < margin) {
-                            y = margin;
-                            posChanged = true;
-                        }
-                        if (y + height > viewportHeight - margin) {
-                            y = viewportHeight - height - margin;
-                            posChanged = true;
-                        }
+                            if (x < margin) {
+                                x = margin;
+                                posChanged = true;
+                            }
+                            if (x + width > viewportWidth - margin) {
+                                x = viewportWidth - width - margin;
+                                posChanged = true;
+                            }
+                            if (y < margin) {
+                                y = margin;
+                                posChanged = true;
+                            }
+                            if (y + height > viewportHeight - margin) {
+                                y = viewportHeight - height - margin;
+                                posChanged = true;
+                            }
 
-                        // 3. Zastosuj zmiany pozycji
-                        if (posChanged) {
-                            $el.css({
-                                top: y + 'px',
-                                left: x + 'px'
-                            });
-                        }
+                            // 3. Zastosuj zmiany pozycji
+                            if (posChanged) {
+                                el.style.top = y + 'px';
+                                el.style.left = x + 'px';
+                            }
 
-                        // 4. Zapisz nowe parametry (jeśli cokolwiek się zmieniło)
-                        if ((posChanged || sizeChanged) && typeof GM_setValue !== 'undefined') {
-                            GM_setValue('tmwp2_window_' + win.id + '_position', JSON.stringify({
-                                x,
-                                y,
-                                width,
-                                height
-                            }));
+                            // 4. Zapisz nowe parametry (jeśli cokolwiek się zmieniło)
+                            if ((posChanged || sizeChanged) && typeof GM_setValue !== 'undefined') {
+                                GM_setValue('tmwp2_window_' + win.id + '_position', JSON.stringify({
+                                    x,
+                                    y,
+                                    width,
+                                    height
+                                }));
+                            }
                         }
-                    }
-                });
+                    });
+                }, 150);
             });
 
             this.initialized = true;
@@ -500,9 +503,104 @@
             };
         };
 
+        // Vanilla JS drag helper (zastępuje jQuery UI draggable)
+        const makeDraggable = (el, handle, options = {}) => {
+            let startX, startY, startLeft, startTop;
+
+            const onPointerMove = (e) => {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                el.style.left = (startLeft + dx) + 'px';
+                el.style.top = (startTop + dy) + 'px';
+                el.style.transform = 'none';
+            };
+
+            const onPointerUp = () => {
+                handle.classList.remove('tmwp2-dragged');
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+                if (options.stop) options.stop();
+            };
+
+            handle.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('input, textarea, select, button')) return;
+                e.preventDefault();
+                const rect = el.getBoundingClientRect();
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = rect.left;
+                startTop = rect.top;
+                el.style.left = startLeft + 'px';
+                el.style.top = startTop + 'px';
+                el.style.transform = 'none';
+                handle.classList.add('tmwp2-dragged');
+                if (options.start) options.start();
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp);
+            });
+        };
+
+        // Vanilla JS resize helper (zastępuje jQuery UI resizable)
+        const makeResizable = (el, options = {}) => {
+            const DIRS = ['n', 'e', 's', 'w', 'se', 'sw', 'ne', 'nw'];
+            let state = null;
+            let disabled = false;
+
+            DIRS.forEach(dir => {
+                const handle = document.createElement('div');
+                handle.className = `ui-resizable-handle ui-resizable-${dir}`;
+                el.appendChild(handle);
+
+                handle.addEventListener('pointerdown', (e) => {
+                    if (disabled) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const rect = el.getBoundingClientRect();
+                    state = { dir, startX: e.clientX, startY: e.clientY, startLeft: rect.left, startTop: rect.top, startWidth: rect.width, startHeight: rect.height };
+                    document.addEventListener('pointermove', onPointerMove);
+                    document.addEventListener('pointerup', onPointerUp);
+                });
+            });
+
+            const onPointerMove = (e) => {
+                if (!state) return;
+                const { dir, startX, startY, startLeft, startTop, startWidth, startHeight } = state;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                let l = startLeft, t = startTop, w = startWidth, h = startHeight;
+
+                if (dir.includes('e')) w = Math.max(150, startWidth + dx);
+                if (dir.includes('s')) h = Math.max(100, startHeight + dy);
+                if (dir.includes('w')) { w = Math.max(150, startWidth - dx); l = startLeft + startWidth - w; }
+                if (dir.includes('n')) { h = Math.max(100, startHeight - dy); t = startTop + startHeight - h; }
+
+                el.style.width = w + 'px';
+                el.style.height = h + 'px';
+                el.style.left = l + 'px';
+                el.style.top = t + 'px';
+
+                if (options.resize) options.resize(null, { position: { left: l, top: t }, size: { width: w, height: h } });
+            };
+
+            const onPointerUp = () => {
+                if (!state) return;
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+                if (options.stop) {
+                    const rect = el.getBoundingClientRect();
+                    options.stop(null, { position: { left: rect.left, top: rect.top }, size: { width: rect.width + 'px', height: rect.height + 'px' } });
+                }
+                state = null;
+            };
+
+            return {
+                enable() { disabled = false; },
+                disable() { disabled = true; }
+            };
+        };
+
         // Zarejestruj wbudowane komponenty TMWP2
         this.registerBuiltinComponents = function () {
-            const self = this;
 
             // Alpine component dla okna
             Alpine.data('tmwp2Window', (win) => ({
@@ -511,8 +609,9 @@
                 init() {
                     const windowConfig = this.windowConfig;
                     this.$nextTick(() => {
-                        const $el = $('#tmwp2-window-' + windowConfig.id);
-                        const $header = $('#tmwp2-header-' + windowConfig.id);
+                        const el = document.getElementById('tmwp2-window-' + windowConfig.id);
+                        const header = document.getElementById('tmwp2-header-' + windowConfig.id);
+                        if (!el || !header) return;
 
                         // Załaduj zapisaną pozycję i stan
                         let savedPosition = null;
@@ -533,19 +632,15 @@
                             windowConfig.minimized = true;
                         }
 
-                        /* if (windowConfig.minimized) {
-                            $el.addClass('tmwp2-minimized');
-                        } */
-
                         // Ustaw pozycję
                         if (savedPosition && savedPosition.left !== undefined && savedPosition.top !== undefined) {
                             const validated = Alpine.store('tmwp').validateWindowBounds({
                                 x: savedPosition.left,
                                 y: savedPosition.top,
-                                width: $el.outerWidth() || parseInt(windowConfig.width) || 400,
-                                height: $el.outerHeight() || parseInt(windowConfig.height) || 300
+                                width: el.offsetWidth || parseInt(windowConfig.width) || 400,
+                                height: el.offsetHeight || parseInt(windowConfig.height) || 300
                             });
-                            $el.css({
+                            Object.assign(el.style, {
                                 top: validated.y + 'px',
                                 left: validated.x + 'px',
                                 width: validated.width + 'px',
@@ -553,7 +648,7 @@
                                 transform: 'none'
                             });
                         } else if (windowConfig.centered && !windowConfig.x && !windowConfig.y) {
-                            $el.css({
+                            Object.assign(el.style, {
                                 top: '50%',
                                 left: '50%',
                                 transform: 'translate(-50%, -50%)'
@@ -562,10 +657,10 @@
                             const validated = Alpine.store('tmwp').validateWindowBounds({
                                 x: parseInt(windowConfig.x),
                                 y: parseInt(windowConfig.y),
-                                width: $el.outerWidth() || parseInt(windowConfig.width) || 400,
-                                height: $el.outerHeight() || parseInt(windowConfig.height) || 300
+                                width: el.offsetWidth || parseInt(windowConfig.width) || 400,
+                                height: el.offsetHeight || parseInt(windowConfig.height) || 300
                             });
-                            $el.css({
+                            Object.assign(el.style, {
                                 top: validated.y + 'px',
                                 left: validated.x + 'px',
                                 width: validated.width + 'px',
@@ -574,43 +669,13 @@
                             });
                         }
 
-                        // Ustaw początkową klasę jeśli okno jest zminimalizowane
-                        /* if (windowConfig.minimized) {
-                            $el.addClass('tmwp2-minimized');
-                        } */
-
                         // Draggable
                         if (windowConfig.draggable) {
-                            $el.draggable({
-                                containment: "document",
-                                handle: $header,
-                                cancel: "input, textarea, select, button",
-                                scroll: false,
-                                start: () => {
-                                    $header.addClass('tmwp2-dragged');
-                                    // Usuń transform przy rozpoczęciu
-                                    const offset = $el[0].getBoundingClientRect();
-                                    $el.css({
-                                        top: offset.top + 'px',
-                                        left: offset.left + 'px',
-                                        transform: 'none'
-                                    });
-                                },
-                                drag: (event, ui) => {
-                                    // Synchronizuj podczas przeciągania
-                                    if (typeof localStorage !== 'undefined') {
-                                        localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
-                                            left: ui.position.left,
-                                            top: ui.position.top
-                                        }));
-                                    }
-                                },
+                            makeDraggable(el, header, {
+                                start: () => { },
                                 stop: () => {
-                                    $header.removeClass('tmwp2-dragged');
-                                    // Zapisz pozycję
-                                    const offset = $el[0].getBoundingClientRect();
+                                    const offset = el.getBoundingClientRect();
                                     if (typeof localStorage !== 'undefined') {
-                                        // Zapisz pozycję do localStorage
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
                                             left: offset.left,
                                             top: offset.top
@@ -622,10 +687,8 @@
 
                         // Resizable
                         if (windowConfig.resizable) {
-                            $el.resizable({
-                                handles: "n, e, s, w, se, sw, ne, nw",
+                            el._resizable = makeResizable(el, {
                                 resize: (event, ui) => {
-                                    // Synchronizuj podczas zmiany rozmiaru
                                     if (typeof localStorage !== 'undefined') {
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
                                             left: ui.position.left,
@@ -638,16 +701,14 @@
                                     }
                                 },
                                 stop: (event, ui) => {
-                                    // Zapisz rozmiar i pozycję
-                                    const offset = $el[0].getBoundingClientRect();
                                     if (typeof localStorage !== 'undefined') {
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_position', JSON.stringify({
-                                            left: offset.left,
-                                            top: offset.top
+                                            left: ui.position.left,
+                                            top: ui.position.top
                                         }));
                                         localStorage.setItem('tmwp2_window_' + windowConfig.id + '_size', JSON.stringify({
-                                            width: ui.size.width + 'px',
-                                            height: ui.size.height + 'px'
+                                            width: ui.size.width,
+                                            height: ui.size.height
                                         }));
                                     }
                                 }
@@ -657,17 +718,11 @@
                         // Obserwuj zmiany w minimized
                         this.$watch('windowConfig.minimized', (minimized) => {
                             if (minimized) {
-                                $el.addClass('tmwp2-minimized');
-                                // Wyłącz resizable
-                                if ($el.resizable('instance')) {
-                                    $el.resizable('disable');
-                                }
+                                el.classList.add('tmwp2-minimized');
+                                if (el._resizable) el._resizable.disable();
                             } else {
-                                $el.removeClass('tmwp2-minimized');
-                                // Włącz resizable
-                                if ($el.resizable('instance')) {
-                                    $el.resizable('enable');
-                                }
+                                el.classList.remove('tmwp2-minimized');
+                                if (el._resizable) el._resizable.enable();
                             }
 
                             // Zapisz stan zminimalizowania
@@ -681,11 +736,10 @@
                             if (e.key === 'tmwp2_window_' + windowConfig.id + '_position' && e.newValue) {
                                 try {
                                     const pos = JSON.parse(e.newValue);
-                                    const currentOffset = $el[0].getBoundingClientRect();
+                                    const currentOffset = el.getBoundingClientRect();
 
-                                    // Aktualizuj tylko jeśli pozycja się zmieniła
                                     if (currentOffset.left !== pos.left || currentOffset.top !== pos.top) {
-                                        $el.css({
+                                        Object.assign(el.style, {
                                             left: pos.left + 'px',
                                             top: pos.top + 'px',
                                             transform: 'none'
@@ -697,12 +751,11 @@
                             } else if (e.key === 'tmwp2_window_' + windowConfig.id + '_size' && e.newValue) {
                                 try {
                                     const size = JSON.parse(e.newValue);
-                                    const currentWidth = $el.outerWidth() + 'px';
-                                    const currentHeight = $el.outerHeight() + 'px';
+                                    const currentWidth = el.offsetWidth + 'px';
+                                    const currentHeight = el.offsetHeight + 'px';
 
-                                    // Aktualizuj tylko jeśli rozmiar się zmienił
                                     if (currentWidth !== size.width || currentHeight !== size.height) {
-                                        $el.css({
+                                        Object.assign(el.style, {
                                             width: size.width,
                                             height: size.height
                                         });
@@ -773,17 +826,16 @@
 
         // Helper functions dla Alpine
         targetWindow.windowStyle = function (win) {
-            const savedSize = localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')) : { width: win.width, height: win.height };
+            const savedSizeRaw = localStorage.getItem('tmwp2_window_' + win.id + '_size');
+            const savedSize = savedSizeRaw ? JSON.parse(savedSizeRaw) : { width: win.width, height: win.height };
+            const savedPosRaw = localStorage.getItem('tmwp2_window_' + win.id + '_position');
+            const savedPos = savedPosRaw ? JSON.parse(savedPosRaw) : null;
             return {
                 position: 'fixed',
-                /* left: win.x + 'px',
-                top: win.y + 'px', */
-                left: localStorage.getItem('tmwp2_window_' + win.id + '_position') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_position')).left + 'px' : (win.x !== null && win.x !== undefined ? win.x + 'px' : '50%'),
-                top: localStorage.getItem('tmwp2_window_' + win.id + '_position') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_position')).top + 'px' : (win.y !== null && win.y !== undefined ? win.y + 'px' : '50%'),
+                left: savedPos ? savedPos.left + 'px' : (win.x !== null && win.x !== undefined ? win.x + 'px' : '50%'),
+                top: savedPos ? savedPos.top + 'px' : (win.y !== null && win.y !== undefined ? win.y + 'px' : '50%'),
                 width: !win.minimized ? savedSize.width : null,
                 height: !win.minimized ? savedSize.height : null,
-                /* width: win.minimized ? localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')).width : win.width : null,
-                height: win.minimized ? localStorage.getItem('tmwp2_window_' + win.id + '_size') ? JSON.parse(localStorage.getItem('tmwp2_window_' + win.id + '_size')).height : win.height : null, */
                 zIndex: 1000000010
             };
         };
